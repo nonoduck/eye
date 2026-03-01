@@ -2,60 +2,109 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>眼睛調節互動模擬器</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>眼睛調節互動模擬器 - 近視成像優化版</title>
     <style>
-        body { font-family: sans-serif; background: #f4f7f6; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; width: 650px; }
+        * { box-sizing: border-box; }
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background: #f0f2f5; overflow: hidden;
+        }
         
-        .vision-selector { margin-bottom: 20px; display: flex; justify-content: center; gap: 15px; }
-        .mode-btn { padding: 8px 16px; border: 2px solid #ddd; border-radius: 20px; cursor: pointer; transition: 0.3s; }
-        .mode-btn.active { background: #4a90e2; color: white; border-color: #4a90e2; }
+        .app-container {
+            display: flex; flex-direction: column;
+            width: 100vw; height: 100vh; padding: 15px;
+        }
 
-        #canvas-container { position: relative; width: 600px; height: 300px; border: 1px solid #eee; margin: 10px 0; overflow: hidden; background: #fff; }
+        .header { text-align: center; margin-bottom: 10px; }
+        .header h2 { margin: 5px 0; color: #1a202c; }
+
+        .vision-selector { 
+            display: flex; justify-content: center; gap: 10px; margin-bottom: 15px;
+        }
+        .mode-btn { 
+            padding: 10px 24px; border: 2px solid #cbd5e0; border-radius: 30px; 
+            cursor: pointer; transition: all 0.2s; background: white; font-weight: bold; color: #4a5568;
+        }
+        .mode-btn.active { background: #4a90e2; color: white; border-color: #4a90e2; box-shadow: 0 4px 12px rgba(74,144,226,0.3); }
+
+        #canvas-wrapper { 
+            flex: 1; position: relative; background: white; border-radius: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; border: 1px solid #e2e8f0;
+        }
+
+        svg { width: 100%; height: 100%; touch-action: none; }
+
+        .footer-info { padding: 15px; text-align: center; }
+        .status-box { 
+            background: #fff; padding: 15px 30px; border-radius: 50px; 
+            display: inline-block; min-width: 450px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #edf2f7;
+        }
         
-        #instruction { color: #888; font-size: 0.9rem; margin-top: 10px; }
-        .status-box { margin-top: 15px; padding: 10px; background: #f9f9f9; border-radius: 10px; min-height: 50px; }
-        
-        /* 讓書本看起來像可以拖動 */
-        #book-guide { color: #4a90e2; font-weight: bold; }
+        #instruction { color: #718096; font-size: 0.9rem; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>眼睛調節：遠近與視力模擬</h2>
-    
+<div class="app-container">
+    <div class="header">
+        <h2>眼睛調節：光學成像模擬</h2>
+    </div>
+
     <div class="vision-selector">
         <div class="mode-btn active" onclick="setMode('normal', this)">視力正常</div>
         <div class="mode-btn" onclick="setMode('myopia', this)">近視 (眼軸過長)</div>
-        <div class="mode-btn" onclick="setMode('presbyopia', this)">老花 (水晶體硬化)</div>
+        <div class="mode-btn" onclick="setMode('presbyopia', this)">老花 (調節力弱)</div>
     </div>
 
-    <div id="canvas-container">
-        <svg width="600" height="300" id="eyeSvg">
-            <path id="retina" d="M 520 80 A 100 120 0 0 1 520 220" fill="none" stroke="#e74c3c" stroke-width="4" />
-            <text x="530" y="70" fill="#e74c3c" font-size="12">視網膜</text>
+    <div id="canvas-wrapper">
+        <svg viewBox="0 0 800 400" id="eyeSvg" preserveAspectRatio="xMidYMid meet">
+            <defs>
+                <filter id="retinaBlur">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="0" id="blurFilter" />
+                </filter>
+                <linearGradient id="rayGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="rgba(255, 222, 89, 0.1)" />
+                    <stop offset="50%" stop-color="rgba(255, 222, 89, 0.4)" />
+                    <stop offset="100%" stop-color="rgba(255, 222, 89, 0.1)" />
+                </linearGradient>
+            </defs>
 
-            <path id="light-rays" d="" fill="rgba(255, 222, 89, 0.3)" stroke="#ffde59" stroke-width="1" />
+            <path id="retina" d="M 650 100 A 120 150 0 0 1 650 300" fill="none" stroke="#f56565" stroke-width="6" stroke-linecap="round" />
+            <text x="660" y="90" fill="#f56565" font-size="14" font-weight="bold">視網膜</text>
 
-            <ellipse id="lens" cx="400" cy="150" rx="12" ry="45" fill="#add8e6" stroke="#5da9e9" stroke-width="2" />
-            <text x="385" y="215" fill="#5da9e9" font-size="12">水晶體</text>
+            <path id="light-rays" d="" fill="url(#rayGradient)" stroke="rgba(255, 215, 0, 0.5)" stroke-width="1" />
+
+            <ellipse id="lens" cx="450" cy="200" rx="15" ry="50" fill="rgba(173, 216, 230, 0.8)" stroke="#4a90e2" stroke-width="2" />
+            
+            <g id="retina-image" filter="url(#retinaBlur)">
+                <g transform="translate(650, 200) scale(0.6, -0.6)">
+                    <rect x="-20" y="-25" width="40" height="50" fill="#fff" stroke="#333" stroke-width="2" />
+                    <rect x="-15" y="-10" width="30" height="3" fill="#e2e8f0" />
+                    <rect x="-15" y="0" width="30" height="3" fill="#e2e8f0" />
+                    <text x="-12" y="15" font-size="12" fill="#2d3748" font-weight="bold">📖</text>
+                </g>
+            </g>
 
             <g id="book" style="cursor: grab;">
-                <rect x="0" y="0" width="40" height="50" fill="#fff" stroke="#333" stroke-width="2" />
-                <line x1="5" y1="10" x2="35" y2="10" stroke="#eee" />
-                <line x1="5" y1="20" x2="35" y2="20" stroke="#eee" />
-                <line x1="5" y1="30" x2="25" y2="30" stroke="#eee" />
-                <text x="8" y="45" font-size="10" fill="#333">BOOK</text>
+                <rect x="0" y="0" width="50" height="65" rx="4" fill="#fff" stroke="#2d3748" stroke-width="3" />
+                <rect x="10" y="15" width="30" height="4" fill="#cbd5e0" />
+                <rect x="10" y="25" width="30" height="4" fill="#cbd5e0" />
+                <text x="8" y="52" font-size="11" font-weight="bold" fill="#2d3748">BOOK</text>
             </g>
         </svg>
     </div>
 
-    <div class="status-box">
-        <div id="status-desc">請左右移動書本觀察水晶體變化</div>
+    <div class="footer-info">
+        <div class="status-box">
+            <div id="status-desc">準備就緒</div>
+        </div>
+        <div id="instruction">💡 點擊書本左右拖動。近視時，書本靠近會使視網膜上的成像變清晰。</div>
     </div>
-    
-    <div id="instruction">💡 點擊並左右拖動「書本」來改變距離</div>
 </div>
 
 <script>
@@ -64,26 +113,11 @@
     const lens = document.getElementById('lens');
     const rays = document.getElementById('light-rays');
     const statusDesc = document.getElementById('status-desc');
+    const blurFilter = document.getElementById('blurFilter');
     
     let currentMode = 'normal';
     let isDragging = false;
-    let bookX = 100;
-
-    // 設定初始位置
-    updateVisuals(100);
-
-    // 拖動邏輯
-    book.addEventListener('mousedown', () => isDragging = true);
-    window.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        const rect = svg.getBoundingClientRect();
-        let x = e.clientX - rect.left - 20;
-        if (x < 20) x = 20;
-        if (x > 330) x = 330;
-        bookX = x;
-        updateVisuals(bookX);
-    });
-    window.addEventListener('mouseup', () => isDragging = false);
+    let bookX = 150;
 
     function setMode(mode, btn) {
         currentMode = mode;
@@ -93,74 +127,93 @@
     }
 
     function updateVisuals(x) {
-        // 1. 移動書本
-        book.setAttribute('transform', `translate(${x}, 125)`);
+        book.setAttribute('transform', `translate(${x}, 167.5)`);
 
-        // 2. 計算距離 (越小代表越近)
-        const distance = 400 - x; 
-        const distFactor = (380 - distance) / 300; // 0 (遠) 到 1 (近)
+        const lensX = 450;
+        const retinaX = 650;
+        const distance = lensX - x; 
+        const distFactor = Math.max(0, (400 - distance) / 350); 
 
-        // 3. 水晶體形狀變化
-        let rx = 10;
-        let ry = 45;
-
+        // 1. 水晶體形狀控制
+        let rx = 12;
+        let ry = 50;
         if (currentMode === 'presbyopia') {
-            // 老花眼：近距離時水晶體變厚受限
-            rx = 10 + (distFactor * 8); 
-            if(rx > 15) rx = 15; 
+            rx = 12 + (distFactor * 6); // 老花：變厚能力極限很低
         } else {
-            // 正常與近視：可以變很厚
-            rx = 10 + (distFactor * 25);
-            ry = 45 - (distFactor * 10);
+            rx = 12 + (distFactor * 25); // 正常與近視：調節力好
+            ry = 50 - (distFactor * 5);
         }
-        
         lens.setAttribute('rx', rx);
         lens.setAttribute('ry', ry);
 
-        // 4. 計算焦點位置 (Focus Point)
-        let retinaX = 520; // 視網膜位置
-        let focusX = 520;  // 預設準確聚焦
+        // 2. 焦點邏輯 (關鍵修改)
+        let focusX = 650; 
 
         if (currentMode === 'myopia') {
-            // 近視：眼軸太長，或是折射太強，焦點落在視網膜前
-            focusX = 480 + (distFactor * 20); 
+            // 近視：物體在遠方時焦點在視網膜前 (例如 580)
+            // 當物體靠近 (distance 變小)，焦點會向後移動
+            // 模擬：當 distance 接近 100 時，焦點回到 650
+            const myopiaOffset = 70; // 遠處時偏離視網膜的距離
+            focusX = (650 - myopiaOffset) + (distFactor * (myopiaOffset + 10));
         } else if (currentMode === 'presbyopia') {
-            // 老花：看近時，水晶體不夠厚，焦點落在視網膜後
-            if (distance < 200) {
-                focusX = 520 + ( (200 - distance) * 0.5 );
+            // 老花：遠處正常，近處時水晶體不夠厚，焦點落在後方
+            if (distance < 250) {
+                focusX = 650 + ((250 - distance) * 0.5);
             }
+        } else {
+            // 正常：自動調節，始終保持在視網膜
+            focusX = 650;
         }
 
-        // 5. 更新光線路徑 (從書本到水晶體邊緣，再到焦點)
-        const lensTop = 150 - ry;
-        const lensBottom = 150 + ry;
-        const bookRight = x + 40;
-        const bookMidY = 150;
-        
-        const pathData = `M ${bookRight} ${bookMidY-10} L 400 ${lensTop} L ${focusX} 150 L 400 ${lensBottom} L ${bookRight} ${bookMidY+10} Z`;
+        // 3. 更新光線 (考慮焦點)
+        const lensTop = 200 - ry;
+        const lensBottom = 200 + ry;
+        const bookRight = x + 50;
+        const pathData = `M ${bookRight} 185 L 450 ${lensTop} L ${focusX} 200 L 450 ${lensBottom} L ${bookRight} 215 Z`;
         rays.setAttribute('d', pathData);
 
-        // 6. 模糊效果 (書本顏色變淡)
-        // 計算焦點與視網膜的差距
-        const blurGap = Math.abs(focusX - retinaX);
-        const opacity = Math.max(0.1, 1 - (blurGap / 40));
-        book.style.opacity = opacity;
+        // 4. 視網膜成像模糊度
+        const blurAmount = Math.abs(focusX - retinaX) / 4;
+        blurFilter.setAttribute('stdDeviation', blurAmount);
 
-        // 7. 更新文字描述
-        updateStatus(distance, blurGap);
-    }
-
-    function updateStatus(dist, gap) {
-        let text = "";
-        if (gap < 5) {
-            text = "✨ <b>視覺清晰</b>：光線準確聚焦在視網膜上。";
+        // 5. 更新狀態文字
+        let statusText = "";
+        if (blurAmount < 1.2) {
+            statusText = "<span style='color: #2f855a;'>✅ <b>影像清晰</b>：光線準確聚焦於視網膜。</span>";
         } else {
-            text = "模糊：光線未準確聚焦，書本影像變淡。";
-            if (currentMode === 'myopia') text += " (近視：焦點在視網膜前)";
-            if (currentMode === 'presbyopia') text += " (老花：水晶體調節力不足)";
+            const pos = focusX < retinaX ? "前方" : "後方";
+            statusText = `<span style='color: #c05621;'>⚠️ <b>影像模糊</b>：焦點落在視網膜${pos}。</span>`;
         }
-        statusDesc.innerHTML = text;
+        statusDesc.innerHTML = statusText;
     }
+
+    // 互動控制
+    function getEventX(e) {
+        const CTM = svg.getScreenCTM();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        return (clientX - CTM.e) / CTM.a;
+    }
+
+    function startDrag(e) { isDragging = true; }
+    function endDrag() { isDragging = false; }
+    function moveDrag(e) {
+        if (!isDragging) return;
+        let x = getEventX(e) - 25;
+        if (x < 20) x = 20;
+        if (x > 380) x = 380;
+        bookX = x;
+        updateVisuals(bookX);
+    }
+
+    book.addEventListener('mousedown', startDrag);
+    window.addEventListener('mousemove', moveDrag);
+    window.addEventListener('mouseup', endDrag);
+    book.addEventListener('touchstart', startDrag);
+    window.addEventListener('touchmove', moveDrag);
+    window.addEventListener('touchend', endDrag);
+
+    // 初始呼叫
+    updateVisuals(bookX);
 </script>
 
 </body>
